@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Board</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .task-board {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+        }
+        .task-column {
+            flex: 1 0 25%;
+            border: 1px solid #eaeaea;
+            border-radius: 8px;
+            margin: 0 8px;
+            background-color: #f8f9fa;
+            padding: 16px;
+        }
+        .task-column h5 {
+            text-align: center;
+            padding: 8px;
+            border-radius: 8px;
+        }
+        .task {
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 8px;
+            margin: 8px 0;
+            cursor: grab;
+            position: relative;
+        }
+        .task .task-title {
+            font-weight: bold;
+        }
+        .task .task-desc {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        .task .delete-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: red;
+        }
+        .task .delete-btn:hover {
+            color: darkred;
+        }
+        .add-task-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        .status-option {
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .status-option:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3 class="text-center my-4">Task Board</h3>
+
+        <!-- Task Board -->
+        <div class="task-board">
+            <!-- To Do Column -->
+            <div class="task-column" id="to-do">
+                <h5 class="bg-primary text-white">To Do</h5>
+                <div class="tasks"></div>
+            </div>
+            <!-- In Progress Column -->
+            <div class="task-column" id="in-progress">
+                <h5 class="bg-danger text-white">In Progress</h5>
+                <div class="tasks"></div>
+            </div>
+            <!-- In Review Column -->
+            <div class="task-column" id="in-review">
+                <h5 class="bg-info text-white">In Review</h5>
+                <div class="tasks"></div>
+            </div>
+            <!-- Completed Column -->
+            <div class="task-column" id="completed">
+                <h5 class="bg-success text-white">Completed</h5>
+                <div class="tasks"></div>
+            </div>
+        </div>
+
+        <!-- Add Task Button -->
+        <div class="add-task-container">
+            <button class="btn btn-primary" id="openTaskModal">+ Add New Task</button>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div class="modal" id="taskModal" tabindex="-1" aria-labelledby="taskModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="taskModalLabel">Add Task</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="taskForm">
+                        <div class="mb-3">
+                            <label for="taskName" class="form-label">Task Name</label>
+                            <input type="text" class="form-control" id="taskName" placeholder="Enter task name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="taskDescription" class="form-label">Task Description</label>
+                            <textarea class="form-control" id="taskDescription" rows="3" placeholder="Enter task description"></textarea>
+                        </div>
+                        <div class="status-grid">
+                            <div class="status-option bg-primary text-white" data-status="to-do">To Do</div>
+                            <div class="status-option bg-danger text-white" data-status="in-progress">In Progress</div>
+                            <div class="status-option bg-info text-white" data-status="in-review">In Review</div>
+                            <div class="status-option bg-success text-white" data-status="completed">Completed</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+
+    <!-- JavaScript -->
+    <script>
+        const openTaskModal = document.getElementById('openTaskModal');
+        const taskModal = new bootstrap.Modal(document.getElementById('taskModal'));
+        const taskForm = document.getElementById('taskForm');
+
+        // Show the task modal
+        openTaskModal.addEventListener('click', () => {
+            taskForm.reset();
+            taskModal.show();
+        });
+
+        // Add event listener to grid options
+        document.querySelectorAll('.status-option').forEach(option => {
+            option.addEventListener('click', () => {
+                const status = option.getAttribute('data-status');
+                addTaskToColumn(status);
+                taskModal.hide();
+            });
+        });
+
+        // Add task to the selected column
+        function addTaskToColumn(columnId) {
+            const taskName = document.getElementById('taskName').value.trim();
+            const taskDescription = document.getElementById('taskDescription').value.trim();
+
+            if (!taskName) {
+                alert('Task name is required!');
+                return;
+            }
+
+            const taskElement = document.createElement('div');
+            taskElement.className = 'task';
+            taskElement.draggable = true;
+            taskElement.innerHTML = `
+                <div class="task-title">${taskName}</div>
+                <div class="task-desc">${taskDescription}</div>
+                <button class="delete-btn" onclick="deleteTask(this)">🗑</button>
+            `;
+            taskElement.addEventListener('dragstart', dragStart);
+
+            document.querySelector(#${columnId} .tasks).appendChild(taskElement);
+        }
+
+        // Delete task from column
+        function deleteTask(button) {
+            const taskElement = button.closest('.task');
+            taskElement.remove();
+        }
+
+        // Drag and Drop Logic
+        document.querySelectorAll('.task-column').forEach(column => {
+            column.addEventListener('dragover', e => e.preventDefault());
+            column.addEventListener('drop', dropTask);
+        });
+
+        function dragStart(e) {
+            e.dataTransfer.setData('text/plain', e.target.outerHTML);
+            e.target.remove();
+        }
+
+        function dropTask(e) {
+            const taskHtml = e.dataTransfer.getData('text/plain');
+            const columnTasks = e.target.closest('.task-column').querySelector('.tasks');
+            columnTasks.insertAdjacentHTML('beforeend', taskHtml);
+            columnTasks.lastChild.addEventListener('dragstart', dragStart);
+        }
+    </script>
+</body>
+</html>
